@@ -66,13 +66,14 @@ internal class Day23
         var map = ReadConnectedComputers();
         IList<IList<string>> biggestParties = [];
 
-        foreach (var (currentComputer, otherComputers) in map.Where(pair => pair.Key.StartsWith("t")))
+        var entriesStartingWithPossibleLeader = map.Where(pair => pair.Key.StartsWith("t")).AsParallel();
+
+        foreach (var (currentComputer, otherComputers) in entriesStartingWithPossibleLeader)
         {
             biggestParties.Add(FindBiggestParty(map, [currentComputer]));
         }
 
         var biggestPartyWithLeader = biggestParties
-           .Where(party => party.Any(c => c.StartsWith("t")))
            .Select(party => (party.Count, Party: party))
            .ToList()
            .OrderBy((v) => v.Count)
@@ -84,22 +85,27 @@ internal class Day23
 
     static IList<string> FindBiggestParty(IDictionary<string, IList<string>> map, IList<string> currentParty)
     {
-        var currentComputer = currentParty.Last();
-        var otherComputers = map[currentComputer];
+        var lastComputerAddedToParty = currentParty.Last();
+        var computersConnectedToLastComputerAddedToParty = map[lastComputerAddedToParty];
 
         IList<IList<string>> parties = [];
 
-        foreach (var otherComputer in otherComputers)
+        foreach (var computerBeingTested in computersConnectedToLastComputerAddedToParty)
         {
-            var isInThePartyAlready = currentParty.Contains(otherComputer);
-            var possibleNewPartyFormation = currentParty.Concat([otherComputer]).ToList();
-            var willTheyAllBeConnected = possibleNewPartyFormation
-                .Select(c => (computer: c, linkedComputers: map[c]))
-                .All(pair => possibleNewPartyFormation.All(c => pair.computer == c || pair.linkedComputers.Contains(c)));
+            var isInThePartyAlready = currentParty.Contains(computerBeingTested);
 
-            if (!isInThePartyAlready && willTheyAllBeConnected)
+            if (!isInThePartyAlready)
             {
-                parties.Add(FindBiggestParty(map, possibleNewPartyFormation));
+                var allInPartyConnectsToNewComputer = currentParty.All(c => map[c].Contains(computerBeingTested));
+                if (allInPartyConnectsToNewComputer)
+                {
+                    var computerBeingTestedIsLinkedToAllComputersInParty = currentParty.All(c => map[computerBeingTested].Contains(c));
+                    if (computerBeingTestedIsLinkedToAllComputersInParty)
+                    {
+                        var possibleNewPartyFormation = currentParty.Concat([computerBeingTested]).ToList();
+                        parties.Add(FindBiggestParty(map, possibleNewPartyFormation));
+                    }
+                }
             }
         }
 
