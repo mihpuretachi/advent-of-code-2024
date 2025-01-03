@@ -19,11 +19,13 @@ internal class Day18
     public static long ResolvePartOne()
     {
         return ReadMemoryMaze(70).CalculateShortestPath(1024);
+        // return ReadMemoryMaze(6).CalculateShortestPath(12);
     }
 
-    public static long ResolvePartTwo()
+    public static string ResolvePartTwo()
     {
-        return 0;
+        return ReadMemoryMaze(70).CalculateMinimalCorruptedMemoryToBlockExit(1024).ToString();
+        // return ReadMemoryMaze(6).CalculateMinimalCorruptedMemoryToBlockExit(12).ToString();
     }
 }
 
@@ -37,9 +39,30 @@ internal class MemoryMaze(IList<Coordinate> corruptedSpaces, int size)
 
     public long CalculateShortestPath(int corruptedMemoryQuantity)
     {
-        var corruptedSpaces = CorruptedSpaces.Take(corruptedMemoryQuantity).ToList();
+        var runners = RunTillFindExit(corruptedMemoryQuantity);
 
-        // Print(corruptedSpaces);
+        var shortestPath = runners.FirstOrDefault(r => r.FoundTarget);
+
+        return shortestPath!.VisitedPoints;
+    }
+
+    public Coordinate CalculateMinimalCorruptedMemoryToBlockExit(int initialCorruptedMemoryQuantity)
+    {
+        var corruptedMemoryQuantity = initialCorruptedMemoryQuantity;
+        IList<MemoryRunner> runners = [];
+
+        do
+        {
+            corruptedMemoryQuantity++;
+            runners = RunTillFindExit(corruptedMemoryQuantity);
+        } while (runners.Count > 0);
+
+        return CorruptedSpaces.Skip(corruptedMemoryQuantity - 1).Take(1).First();
+    }
+
+    private IList<MemoryRunner> RunTillFindExit(int corruptedMemoryQuantity)
+    {
+        var corruptedSpaces = CorruptedSpaces.Take(corruptedMemoryQuantity).ToList();
 
         var runner = new MemoryRunner(Start, End, 0, corruptedSpaces, Size);
         IList<MemoryRunner> runners = [runner];
@@ -66,7 +89,7 @@ internal class MemoryMaze(IList<Coordinate> corruptedSpaces, int size)
                         continue;
                     }
 
-                    Console.WriteLine($"Passing through point {newRunner.CurrentPosition}");
+                    // Console.WriteLine($"Passing through point {newRunner.CurrentPosition}");
 
                     allVisitedPoints.Add(newRunner.CurrentPosition);
 
@@ -90,29 +113,7 @@ internal class MemoryMaze(IList<Coordinate> corruptedSpaces, int size)
             }
         }
 
-        var shortestPath = runners.FirstOrDefault(r => r.FoundTarget);
-
-        return shortestPath!.VisitedPoints;
-    }
-
-    private void Print(IList<Coordinate> corruptedSpaces)
-    {
-        for (var y = 0; y < Size; y++)
-        {
-            var line = "";
-            for (var x = 0; x < Size; x++)
-            {
-                var corruptedSpace = corruptedSpaces.FirstOrDefault(s => s.X == x && s.Y == y);
-                if (corruptedSpace != null)
-                {
-                    line += "#";
-                    continue;
-                }
-
-                line += ".";
-            }
-            Console.WriteLine(line);
-        }
+        return runners;
     }
 }
 
@@ -193,5 +194,3 @@ internal class MemoryRunner
             .ToList();
     }
 }
-
-internal record VisitedMemoryPoint(Coordinate Coordinate, int VisitedPointsTillThere) { }
