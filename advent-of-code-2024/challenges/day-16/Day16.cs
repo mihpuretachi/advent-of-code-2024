@@ -48,8 +48,7 @@ internal class Day16
 
     public static long ResolvePartTwo()
     {
-        return 0;
-        //return ReadMaze().CalculateBestPathTiles();
+        return ReadMaze().CalculateBestPathTiles();
     }
 }
 
@@ -68,7 +67,8 @@ internal class ReindeerMaze
 
     public long CalculateShortestPathScore()
     {
-        return CalculatePaths().MinBy(r => r.Score)!.Score;
+        // return CalculatePaths().MinBy(r => r.Score)!.Score;
+        return 0;
     }
 
     public long CalculateBestPathTiles()
@@ -79,17 +79,17 @@ internal class ReindeerMaze
         return bestPaths.SelectMany(p => p.VisitedPoints).DistinctBy(p => p.Coordinate.GetHashCode()).Count();
     }
 
-    private IList<Runner> CalculatePaths()
+    private IList<MazeRunner> CalculatePaths()
     {
-        var runner = new Runner(Start, End, Direction.Right, 0, [new VisitedPoint(Start, 0, Direction.Right)], this);
-        IList<Runner> runners = [runner];
+        var runner = new MazeRunner(Start, End, Direction.Right, 0, [new VisitedPoint(Start, 0, Direction.Right)], this);
+        IList<MazeRunner> runners = [runner];
         IList<long> scores = [];
 
         while (runners.Any(r => r.CanWalk))
         {
             foreach (var currentRunner in runners.Where(r => r.CanWalk).ToList())
             {
-                var newRunners = currentRunner.GoAhead();
+                var newRunners = currentRunner.Split();
                 runners.Remove(currentRunner);
                 foreach (var newRunner in newRunners)
                 {
@@ -133,7 +133,7 @@ internal class ReindeerMaze
         return runners.Where(r => r.FoundTarget).ToList();
     }
 
-    private IEnumerable<VisitedPoint> ExtractAlternativePath(Runner runner, Coordinate target)
+    private IEnumerable<VisitedPoint> ExtractAlternativePath(MazeRunner runner, Coordinate target)
     {
         IList<VisitedPoint> alternativePath = [];
         foreach (var visitedPoint in runner.VisitedPoints)
@@ -150,8 +150,7 @@ internal class ReindeerMaze
 
 record VisitedPoint(Coordinate Coordinate, long Score, Direction Direction) { }
 
-
-internal class Runner(
+internal class MazeRunner(
     Coordinate currentPosition,
     Coordinate targetPosition,
     Direction currentDirection,
@@ -169,7 +168,7 @@ internal class Runner(
 
     public bool CanWalk => !FoundTarget && FoundDeadEndAt == null;
 
-    public IList<Runner> GoAhead()
+    public IList<MazeRunner> Split()
     {
         var nextCoordinates = new List<(Coordinate, long, Direction)> {
                 (new Coordinate(CurrentPosition.X + 1, CurrentPosition.Y), CurrentDirection == Direction.Right ? 1 : 1001, Direction.Right),
@@ -199,7 +198,7 @@ internal class Runner(
             var newScore = Score + pair.Item2;
             var direction = pair.Item3;
 
-            var newRunner = new Runner(
+            var newRunner = new MazeRunner(
                 coordinate,
                 targetPosition,
                 direction,

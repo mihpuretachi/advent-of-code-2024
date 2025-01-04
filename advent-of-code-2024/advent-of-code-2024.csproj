@@ -67,6 +67,9 @@
     <None Update="challenges\day-23\source.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="challenges\day-20\source.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="challenges\day-xx\source.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

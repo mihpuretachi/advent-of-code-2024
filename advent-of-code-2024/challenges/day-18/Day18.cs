@@ -1,4 +1,6 @@
-﻿namespace advent_of_code_2024.challenges;
+﻿using advent_of_code_2024.common;
+
+namespace advent_of_code_2024.challenges;
 
 internal class Day18
 {
@@ -29,17 +31,19 @@ internal class Day18
     }
 }
 
-internal class MemoryMaze(IList<Coordinate> corruptedSpaces, int size)
+internal class MemoryMaze : Maze
 {
-    private IList<Coordinate> CorruptedSpaces = corruptedSpaces;
-    private Coordinate Start = new(0, 0);
-    private Coordinate End = new(size, size);
-
-    public int Size = size;
+    public MemoryMaze(IList<Coordinate> corruptedSpaces, int size)
+        : base(corruptedSpaces, size, new Coordinate(0, 0), new(size, size))
+    {
+    }
 
     public long CalculateShortestPath(int corruptedMemoryQuantity)
     {
-        var runners = RunTillFindExit(corruptedMemoryQuantity);
+        var corruptedSpaces = Walls.Take(corruptedMemoryQuantity).ToList();
+        var startingRunner = new BasicRunner(Start, End, 0, corruptedSpaces, Size);
+
+        var runners = RunTillFindExit(startingRunner, corruptedSpaces);
 
         var shortestPath = runners.FirstOrDefault(r => r.FoundTarget);
 
@@ -49,148 +53,19 @@ internal class MemoryMaze(IList<Coordinate> corruptedSpaces, int size)
     public Coordinate CalculateMinimalCorruptedMemoryToBlockExit(int initialCorruptedMemoryQuantity)
     {
         var corruptedMemoryQuantity = initialCorruptedMemoryQuantity;
-        IList<MemoryRunner> runners = [];
+        IList<Runner> runners = [];
 
         do
         {
             corruptedMemoryQuantity++;
-            runners = RunTillFindExit(corruptedMemoryQuantity);
+
+            var corruptedSpaces = Walls.Take(corruptedMemoryQuantity).ToList();
+            var startingRunner = new BasicRunner(Start, End, 0, corruptedSpaces, Size);
+
+            runners = RunTillFindExit(startingRunner, corruptedSpaces);
         } while (runners.Count > 0);
 
-        return CorruptedSpaces.Skip(corruptedMemoryQuantity - 1).Take(1).First();
-    }
-
-    private IList<MemoryRunner> RunTillFindExit(int corruptedMemoryQuantity)
-    {
-        var corruptedSpaces = CorruptedSpaces.Take(corruptedMemoryQuantity).ToList();
-
-        var runner = new MemoryRunner(Start, End, 0, corruptedSpaces, Size);
-        IList<MemoryRunner> runners = [runner];
-        IList<Coordinate> allVisitedPoints = [new Coordinate(0, 0)];
-
-        while (!runners.Any(r => r.FoundTarget) && runners.Any(r => r.CanWalk))
-        {
-            IList<MemoryRunner> runnersToBeDeleted = [];
-            IList<MemoryRunner> runnersToBeAdded = [];
-
-            foreach (var currentRunner in runners)
-            {
-                var newRunners = currentRunner.GoAhead(allVisitedPoints);
-
-                if (!currentRunner.FoundTarget)
-                {
-                    runnersToBeDeleted.Add(currentRunner);
-                }
-
-                foreach (var newRunner in newRunners)
-                {
-                    if (allVisitedPoints.Contains(newRunner.CurrentPosition))
-                    {
-                        continue;
-                    }
-
-                    // Console.WriteLine($"Passing through point {newRunner.CurrentPosition}");
-
-                    allVisitedPoints.Add(newRunner.CurrentPosition);
-
-                    if (newRunner.FoundDeadEndAt != null)
-                    {
-                        continue;
-                    }
-
-                    runnersToBeAdded.Add(newRunner);
-                }
-            }
-
-            foreach (var runnerToBeDeleted in runnersToBeDeleted)
-            {
-                runners.Remove(runnerToBeDeleted);
-            }
-
-            foreach (var runnerToBeAdded in runnersToBeAdded)
-            {
-                runners.Add(runnerToBeAdded);
-            }
-        }
-
-        return runners;
+        return Walls.Skip(corruptedMemoryQuantity - 1).Take(1).First();
     }
 }
 
-internal class MemoryRunner
-{
-    private int MazeSize;
-    private IList<Coordinate> CorruptedSpaces;
-    private Coordinate TargetPosition;
-
-    public Coordinate? FoundDeadEndAt;
-    public Coordinate CurrentPosition;
-    public int VisitedPoints;
-
-    public MemoryRunner(
-        Coordinate currentPosition,
-        Coordinate targetPosition,
-        int visitedPoints,
-        IList<Coordinate> corruptedSpaces,
-        int mazeSize)
-    {
-        CurrentPosition = currentPosition;
-        TargetPosition = targetPosition;
-        VisitedPoints = visitedPoints;
-        CorruptedSpaces = corruptedSpaces;
-        MazeSize = mazeSize;
-    }
-
-    public bool CanWalk => !FoundTarget && FoundDeadEndAt == null;
-    public bool FoundTarget => CurrentPosition.Equals(TargetPosition);
-
-    public IList<MemoryRunner> GoAhead(IList<Coordinate> allVisitedPoints)
-    {
-        var nextCoordinates = new List<Coordinate> {
-                new Coordinate(CurrentPosition.X + 1, CurrentPosition.Y),
-                new Coordinate(CurrentPosition.X, CurrentPosition.Y + 1),
-                new Coordinate(CurrentPosition.X - 1, CurrentPosition.Y),
-                new Coordinate(CurrentPosition.X, CurrentPosition.Y - 1),
-            };
-
-        nextCoordinates = nextCoordinates
-            .Where(coordinate =>
-            {
-                return coordinate.X >= 0 &&
-                    coordinate.Y >= 0 &&
-                    coordinate.X <= MazeSize &&
-                    coordinate.Y <= MazeSize &&
-                    !CorruptedSpaces.Any(space => space.Equals(coordinate)) &&
-                    !allVisitedPoints.Any(visitedPoint => visitedPoint.Equals(coordinate));
-            }).ToList();
-
-        if (nextCoordinates.Count == 0)
-        {
-            FoundDeadEndAt = CurrentPosition;
-            return [this];
-        }
-
-        var finalCoordinate = nextCoordinates.FirstOrDefault(c => c.Equals(TargetPosition));
-
-        if (finalCoordinate != null)
-        {
-            var newRunner = new MemoryRunner(
-               finalCoordinate,
-               TargetPosition,
-               VisitedPoints + 1,
-               CorruptedSpaces,
-               MazeSize);
-
-            return [newRunner];
-        }
-
-        return nextCoordinates.Select(coordinate =>
-            new MemoryRunner(
-                coordinate,
-                TargetPosition,
-                VisitedPoints + 1,
-                CorruptedSpaces,
-                MazeSize))
-            .ToList();
-    }
-}
