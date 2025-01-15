@@ -11,25 +11,24 @@ internal class Day11
     public static double ResolvePartOne()
     {
         var arrangement = CreateArrangement();
-        for (int i = 0; i < 75; i++)
+        for (int i = 0; i < 25; i++)
         {
             //Console.WriteLine($"After {i} blinks: {arrangement.PebblesString}");
             Console.WriteLine($"Blink: {i}");
-            arrangement.Blink2();
+            arrangement.Blink();
         }
-        return arrangement.PebblesString.Count(c => c == '.');
+        return arrangement.Pebbles.Count;
     }
 
     public static double ResolvePartTwo()
     {
-        //var arrangement = CreateArrangement();
-        //for (int i = 1; i <= 75; i++)
-        //{
-        //    Console.WriteLine($"Blinking for the time {i}. {arrangement.Pebbles.Count} pebbles by now.");
-        //    arrangement.Blink();
-        //}
-        //return arrangement.Pebbles.Count;
-        return 0;
+        var arrangement = CreateArrangement();
+        for (int i = 1; i <= 75; i++)
+        {
+            Console.WriteLine($"Blinking for the time {i}. {arrangement.Pebbles.Count} pebbles by now.");
+            arrangement.Blink();
+        }
+        return arrangement.Pebbles.Count;
     }
 }
 
@@ -69,12 +68,11 @@ class Arrangement(IList<Pebble> pebbles)
 
     public void Blink2()
     {
-
         var lastSeparatorIndex = 0;
         for (var i = 1; i < PebblesString.Length; i++)
         {
             var value = PebblesString[i];
-            if(value == 0)
+            if (value == 0)
             {
                 PebblesString = PebblesString.Remove(i);
                 PebblesString = PebblesString.Insert(i, "1");
@@ -94,8 +92,8 @@ class Arrangement(IList<Pebble> pebbles)
 
                     var sizeBeforeReplace = PebblesString.Length;
                     var newNumberLeft = long.Parse(newNumberLeftString);
-                        PebblesString = PebblesString.Remove(lastSeparatorIndex + 1, halfSize);
-                        PebblesString = PebblesString.Insert(lastSeparatorIndex + 1, newNumberLeft.ToString());
+                    PebblesString = PebblesString.Remove(lastSeparatorIndex + 1, halfSize);
+                    PebblesString = PebblesString.Insert(lastSeparatorIndex + 1, newNumberLeft.ToString());
 
                     var diff = sizeBeforeReplace - PebblesString.Length;
                     newSeparatorIndex = newSeparatorIndex - diff;
