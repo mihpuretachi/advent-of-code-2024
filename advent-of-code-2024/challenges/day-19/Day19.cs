@@ -2,12 +2,12 @@
 
 internal class Day19
 {
-    static (IDictionary<string, bool>, IList<string>) ReadTowelsSetup()
+    static (IList<string>, IList<string>) ReadTowelsSetup()
     {
         var lines = Utils.ReadLinesFromChallengeSource(19);
 
-        IDictionary<string, bool> towelPatterns = new Dictionary<string, bool>();
-        IList<string> desiredTowels = [];
+        IList<string> availableTowels = [];
+        IList<string> requests = [];
 
         for (int i = 0; i < lines.Count; i++)
         {
@@ -20,79 +20,93 @@ internal class Day19
 
             if (i == 0)
             {
-                towelPatterns = line.Split(", ").ToDictionary(v => v, v => true);
+                availableTowels = line.Split(", ").ToList();
                 continue;
             }
 
-            desiredTowels.Add(line);
+            requests.Add(line);
         }
 
-        return (towelPatterns, desiredTowels);
+        return (availableTowels, requests);
     }
 
     public static long ResolvePartOne()
     {
-        var (patterns, desiredTowels) = ReadTowelsSetup();
+        var (availableTowels, requests) = ReadTowelsSetup();
 
-        return desiredTowels
-            //.AsParallel()
-            .Count(desiredPattern =>
-            {
-                var newCache = patterns.ToDictionary();
-                var result = HasPossibleCombination(desiredPattern, newCache);
-                Console.WriteLine($"Resolved line {desiredPattern} with {result}");
-                return result;
-            });
+        return requests.Count(r => HasCombination(r, availableTowels, new Dictionary<string, bool>()));
     }
 
     public static long ResolvePartTwo()
     {
-        return 0;
+        var (availableTowels, requests) = ReadTowelsSetup();
+
+        var combinations = requests.Select(request => CountCombinations(request, availableTowels, new Dictionary<string, long>()));
+
+        return combinations.Sum();
     }
 
-    static bool HasPossibleCombination(string desiredPattern, IDictionary<string, bool> cache)
+    static bool HasCombination(string request, IList<string> availableTowels, IDictionary<string, bool> cache)
     {
-        var count = 1;
-        while (count <= desiredPattern.Length)
+        if (cache.TryGetValue(request, out var cachedResult))
         {
-            var section = new string(desiredPattern.Take(count).ToArray());
-            if (cache.ContainsKey(section))
-            {
-                if (!cache[section])
-                {
-                    return false;
-                }
-
-                var remainingPattern = new string(desiredPattern.Skip(count).Take(desiredPattern.Length - count).ToArray());
-                if (remainingPattern.Length == 0)
-                {
-                    return true;
-                }
-
-                if (cache.ContainsKey(remainingPattern) && !cache[remainingPattern])
-                {
-                    count++;
-                    continue;
-                }
-
-                var result = HasPossibleCombination(remainingPattern, cache);
-
-                if (result == true)
-                {
-                    if (!cache.ContainsKey(remainingPattern))
-                    {
-                        cache.Add(remainingPattern, true);
-                    }
-                    return true;
-                }
-                else if (!cache.ContainsKey(remainingPattern))
-                {
-                    cache.Add(remainingPattern, false);
-                }
-            }
-            count++;
+            return cachedResult;
         }
 
+        foreach (var towel in availableTowels)
+        {
+            if (request.StartsWith(towel))
+            {
+                if (request.Length == towel.Length)
+                {
+                    cache.TryAdd(request, true);
+                    return true;
+                }
+                else
+                {
+                    var result = HasCombination(request.Substring(towel.Length), availableTowels, cache);
+                    cache.TryAdd(request, result);
+                    
+                    if (!result)
+                    {
+                        continue;
+                    }
+                    
+                    return true;
+                }
+            }
+        }
+
+        cache.TryAdd(request, false);
         return false;
+    }
+
+    static long CountCombinations(string request, IList<string> availableTowels, IDictionary<string, long> cache)
+    {
+        if (cache.TryGetValue(request, out var cachedResult))
+        {
+            return cachedResult;
+        }
+
+        long result = 0;
+
+        foreach (var towel in availableTowels)
+        {
+            if (request.StartsWith(towel))
+            {
+                if (request.Length == towel.Length)
+                {
+                    result += 1;
+                }
+                else
+                {
+                    result += CountCombinations(request.Substring(towel.Length), availableTowels, cache);
+                }
+            }
+        }
+
+        cache.TryAdd(request, result);
+
+        return result;
     }
 }
