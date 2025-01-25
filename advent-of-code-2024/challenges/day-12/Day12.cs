@@ -41,7 +41,8 @@ internal class Day12
 
     public static long ResolvePartTwo()
     {
-        return 0;
+        var gardens = ReadGardens();
+        return gardens.Sum(g => g.CalculateBulkPrice());
     }
 
     class Garden(string symbol)
@@ -93,8 +94,7 @@ internal class Day12
         {
             var neighborsWithSameSymbol = plant.CalculateNeighbors()
                 .Where(p => !alreadyVisited.Contains(p))
-                .Where(p => p.Y < map.Count
-                    && p.Y >= 0)
+                .Where(p => p.Y < map.Count && p.Y >= 0)
                 .Select(p => (position: p, line: map[p.Y]))
                 .Where(pair => pair.position.X < pair.line.Length
                     && pair.position.X >= 0
@@ -127,6 +127,104 @@ internal class Day12
             return Plants.Count * Plants.Sum(CalculateFences);
         }
 
+        public long CalculateBulkPrice()
+        {
+            Fence[] CalculateFences(Plant plant)
+            {
+                return plant.CalculateNeighbors()
+                    .Where(position => !Plants.Any(plant => plant.Coordinate.Equals(position)))
+                    .Select(neighborn =>
+                    {
+                        Direction positionedAt;
+
+                        if (neighborn.Y < plant.Coordinate.Y)
+                        {
+                            positionedAt = Direction.Up;
+                        }
+                        else if (neighborn.Y > plant.Coordinate.Y)
+                        {
+                            positionedAt = Direction.Down;
+                        }
+                        else if (neighborn.X < plant.Coordinate.X)
+                        {
+                            positionedAt = Direction.Left;
+                        }
+                        else
+                        {
+                            positionedAt = Direction.Right;
+                        }
+
+                        return new Fence(plant.Coordinate, positionedAt!);
+                    }).ToArray();
+            }
+
+            var fencesGroupedByDirection = Plants
+                .SelectMany(CalculateFences)
+                .GroupBy(p => p.PositionedAt);
+
+            var sides = 0;
+
+            foreach (var fencesGroup in fencesGroupedByDirection)
+            {
+                if (fencesGroup.Key == Direction.Up || fencesGroup.Key == Direction.Down)
+                {
+                    var groupedByY = fencesGroup.GroupBy(p => p.Coordinate.Y);
+                    foreach (var fencesInLine in groupedByY)
+                    {
+                        var orderedFences = fencesInLine.OrderBy(p => p.Coordinate.X);
+                        Fence lastFence = null!;
+                        foreach (var fence in orderedFences)
+                        {
+                            if (lastFence == null)
+                            {
+                                sides++;
+                                lastFence = fence;
+                                continue;
+                            }
+
+                            if (fence.Coordinate.X == lastFence.Coordinate.X + 1)
+                            {
+                                lastFence = fence;
+                                continue;
+                            }
+
+                            sides++;
+                            lastFence = fence;
+                        }
+                    }
+                }
+                else
+                {
+                    var groupedByX = fencesGroup.GroupBy(p => p.Coordinate.X);
+                    foreach (var fencesInLine in groupedByX)
+                    {
+                        var orderedFences = fencesInLine.OrderBy(p => p.Coordinate.Y);
+                        Fence lastFence = null!;
+                        foreach (var fence in orderedFences)
+                        {
+                            if (lastFence == null)
+                            {
+                                sides++;
+                                lastFence = fence;
+                                continue;
+                            }
+
+                            if (fence.Coordinate.Y == lastFence.Coordinate.Y + 1)
+                            {
+                                lastFence = fence;
+                                continue;
+                            }
+
+                            sides++;
+                            lastFence = fence;
+                        }
+                    }
+                }
+            }
+
+            return Plants.Count * sides;
+        }
+
         public override string ToString()
         {
             return $"{Symbol}-{Plants.Count}";
@@ -151,5 +249,11 @@ internal class Day12
                 new Coordinate (Coordinate.X, Coordinate.Y +1)
             ];
         }
+    }
+
+    class Fence(Coordinate coordinate, Direction positionedAt)
+    {
+        public Coordinate Coordinate = coordinate;
+        public Direction PositionedAt = positionedAt;
     }
 }
