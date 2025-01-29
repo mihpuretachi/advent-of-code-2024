@@ -138,6 +138,12 @@ switch (day)
         Console.WriteLine("Part 2: " + Day23.ResolvePartTwo());
         break;
 
+    case 24:
+        Console.WriteLine("--------  Day 24 ---------");
+        Console.WriteLine("Part 1: " + Day24.ResolvePartOne());
+        Console.WriteLine("Part 2: " + Day24.ResolvePartTwo());
+        break;
+
     case 25:
         Console.WriteLine("--------  Day 25 ---------");
         Console.WriteLine("Part 1: " + Day25.ResolvePartOne());
