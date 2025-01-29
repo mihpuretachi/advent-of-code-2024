@@ -138,6 +138,12 @@ switch (day)
         Console.WriteLine("Part 2: " + Day23.ResolvePartTwo());
         break;
 
+    case 25:
+        Console.WriteLine("--------  Day 25 ---------");
+        Console.WriteLine("Part 1: " + Day25.ResolvePartOne());
+        Console.WriteLine("Part 2: " + Day25.ResolvePartTwo());
+        break;
+
     default:
         Console.WriteLine("Challenge still not implemented =(");
         break;
